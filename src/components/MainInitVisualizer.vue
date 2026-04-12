@@ -405,7 +405,7 @@ const steps = [
       { name: 'memory_end',  val: '?',        hot: false, tip: '物理内存上界（字节）。等于 1MB + 扩展内存大小，最大 16MB。' },
       { name: 'EXT_MEM_K',   val: '0x3C00',   hot: true,  tip: '扩展内存大小（KB），由 setup.s 通过 BIOS INT 15h 查询后写入 0x90002。0x3C00 = 15360 KB = 15 MB。' },
     ],
-    explain: 'main() 第一件事是从 setup.s 留在 0x90000 附近的参数区读取硬件信息。这些地址是 setup 和 main.c 之间约定好的"接口"。',
+    explain: '就像你入职第一天要办工牌、配电脑、申请各种权限，内核也要在正式运行之前把所有子系统都初始化好——内存怎么分、中断怎么响、进程怎么调度，全在这一步完成。\n\nmain() 第一件事是从 setup.s 留在 0x90000 附近的参数区读取硬件信息。这些地址是 setup 和 main.c 之间约定好的"接口"。',
     detail: 'init/main.c:59 开始一系列宏定义读取：\n  ROOT_DEV = *(short*)0x901FC  根设备号\n  EXT_MEM_K = *(short*)0x90002  扩展内存 KB 数\n  DRIVE_INFO 来自 0x90080  硬盘参数\n这是实模式（setup）向保护模式（main）传递信息的唯一手段——共享内存地址。',
     code: `/* init/main.c:59 — 读取 setup.s 写入的参数 */
 #define EXT_MEM_K   (*(unsigned short *)0x90002)

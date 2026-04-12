@@ -737,7 +737,7 @@ const steps = [
     phaseIdx: 0, phase: '总览', tagType: 'info',
     title: '进程调度全局架构：task[] → schedule() → switch_to → CPU',
     srcRef: 'kernel/sched.c:68', scene: 'overview',
-    explain: '进程调度是内核核心机制：时钟中断 → do_timer() → schedule() 选进程 → switch_to() 切换。',
+    explain: '你电脑同时开着浏览器、音乐、IDE，但 CPU 只有一个核——它是怎么让所有程序"同时"跑起来的？答案是每个程序轮流用 CPU，切换速度快到你感觉不出来。\n\n进程调度是内核核心机制：时钟中断 → do_timer() → schedule() 选进程 → switch_to() 切换。',
     detail: 'Linux 0.11 采用非抢占式优先级时间片调度。每个时钟中断（100Hz）触发 do_timer()，将当前进程 counter 减1；counter 归零时调用 schedule() 重新选进程。schedule() 找 counter 最大的 RUNNING 进程，通过 switch_to() 的一条 ljmp 指令完成上下文切换。整个调度器代码不到100行，但设计精巧。',
     vars: [{ name: 'HZ', val: '100（时钟频率）' }, { name: 'jiffies', val: '系统运行tick数' }, { name: 'current', val: '指向当前进程' }],
     tasks: [

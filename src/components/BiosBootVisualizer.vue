@@ -434,7 +434,7 @@ const steps = [
     regs: { CS: '0xF000', IP: '0xFFF0', DS: '0x0000', SS: '0x0000', SP: '0x0000' },
     activeRegs: ['CS', 'IP'],
     segFormula: ['CS:IP = 0xF000:0xFFF0', '物理地址 = 0xF000×16 + 0xFFF0', '        = 0xFFFF0  ✓ BIOS入口'],
-    explain: 'CPU 硬件将 CS:IP 强制设为 0xF000:0xFFF0，物理地址 0xFFFF0，指向 BIOS ROM。',
+    explain: '你每次按下电源键，电脑怎么知道该干什么？在任何操作系统启动之前，主板芯片里有一段固化的代码会先跑起来——这就是 BIOS，它是整个软件世界的第一行代码。\n\nCPU 硬件将 CS:IP 强制设为 0xF000:0xFFF0，物理地址 0xFFFF0，指向 BIOS ROM。',
     detail: 'x86 实模式寻址：物理地址 = 段寄存器 × 16 + 偏移。上电瞬间 CS=0xF000, IP=0xFFF0，计算得物理地址 0xFFFF0。这是 BIOS ROM 末尾 16 字节区域，通常放一条 far jmp 指令，跳进 BIOS 主体。',
     code: `; BIOS ROM 0xFFFF0 — 第一条指令
 ; 物理地址 = CS×16 + IP = 0xF000×16 + 0xFFF0 = 0xFFFF0

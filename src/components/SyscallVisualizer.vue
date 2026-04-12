@@ -446,7 +446,7 @@ const steps = [
     title: 'int 0x80：用户态与内核态之间的唯一通道',
     srcRef: 'kernel/sys_call.s:1',
     scene: 'overview', cpl: 3,
-    explain: 'Linux 0.11 全部 72 个系统调用共用一个入口 int 0x80。EAX=调用号，EBX/ECX/EDX 传参，EAX 返回结果。',
+    explain: '你写的 Python/Java/Go 代码怎么最终读到文件、发出网络包？普通程序没有权限直接碰硬件，必须通过系统调用"请求"内核帮忙——就像普通员工要用公章，必须找有权限的人盖。\n\nLinux 0.11 全部 72 个系统调用共用一个入口 int 0x80。EAX=调用号，EBX/ECX/EDX 传参，EAX 返回结果。',
     detail: '系统调用是用户态程序请求内核服务的唯一合法途径。int 0x80 是一条软中断指令，触发 CPU 查 IDT[0x80]，发现陷阱门，完成特权级从 ring3 切换到 ring0，同时切换到进程的内核栈（来自 TSS.esp0）。整个切换过程完全由硬件完成，软件只需设置好寄存器再执行一条 int 指令。Linux 0.11 共有 72 个系统调用，从 sys_exit(1) 到 sys_sysinfo(116)，全部通过 sys_call_table 分发。',
     regs: [
       { name: 'CPL',  val: '3',            cls: 'reg-user' },

@@ -1,8 +1,18 @@
 <template>
   <div style="max-width: 900px; margin: 0 auto">
-    <div style="margin-bottom: 24px">
-      <h2 style="font-size: 20px; font-weight: 600; color: #303133; margin-bottom: 6px">Linux 0.11 可视化学习</h2>
-      <p style="color: #909399; font-size: 14px">通过动态可视化理解操作系统底层原理，从 BIOS 启动开始逐步深入</p>
+    <div style="margin-bottom: 28px">
+      <h2 style="font-size: 22px; font-weight: 700; color: #303133; margin-bottom: 8px">Linux 0.11 可视化学习</h2>
+      <p style="color: #606266; font-size: 15px; margin-bottom: 14px">
+        写了多年代码，却不知道 <code style="background:#f5f7fa;padding:2px 6px;border-radius:3px;font-size:13px">printf</code> 怎么把字符显示出来、
+        <code style="background:#f5f7fa;padding:2px 6px;border-radius:3px;font-size:13px">fork()</code> 为什么快、断电为什么会丢数据？
+        这里用动画帮你看清楚操作系统底层每一步在做什么。
+      </p>
+      <el-alert type="info" :closable="false" style="margin-bottom:4px">
+        <template #title>
+          <span style="font-weight:600">建议阅读顺序：</span>
+          BIOS启动 → main()初始化 → 内核态/用户态 → 内存布局 → 系统调用 → 进程调度 → fork/exec → 信号 → 管道 → 文件系统 → 磁盘I/O
+        </template>
+      </el-alert>
     </div>
 
     <el-row :gutter="16">
