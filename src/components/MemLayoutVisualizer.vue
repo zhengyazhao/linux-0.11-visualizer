@@ -1,32 +1,37 @@
 <template>
   <div class="ml-root">
-    <!-- Phase 进度条 -->
-    <div class="phase-bar">
-      <div
-        v-for="(ph, pi) in phases"
-        :key="pi"
-        class="phase-seg"
-        :class="{ active: currentPhase === pi, done: currentPhase > pi }"
-        @click="jumpToPhase(pi)"
-      >
-        <span class="phase-label">{{ ph.name }}</span>
-        <span class="phase-file">{{ ph.file }}</span>
+    <!-- 主体：左侧导航 + 三栏内容 -->
+    <div class="ml-body">
+      <!-- 左侧竖向导航：Phase + 步骤指示器 -->
+      <div class="ml-nav">
+        <div class="nav-section-title">阶段</div>
+        <div class="phase-bar">
+          <div
+            v-for="(ph, pi) in phases"
+            :key="pi"
+            class="phase-seg"
+            :class="{ active: currentPhase === pi, done: currentPhase > pi }"
+            @click="jumpToPhase(pi)"
+          >
+            <span class="phase-label">{{ ph.name }}</span>
+            <span class="phase-file">{{ ph.file }}</span>
+          </div>
+        </div>
+
+        <div class="nav-section-title" style="margin-top:8px">步骤 {{ currentIdx + 1 }} / {{ steps.length }}</div>
+        <div class="step-indicator">
+          <span
+            v-for="i in steps.length"
+            :key="i"
+            class="step-dot"
+            :class="{ active: currentIdx === i - 1, done: currentIdx > i - 1 }"
+            @click="goStep(i - 1)"
+          />
+        </div>
       </div>
-    </div>
 
-    <!-- 步骤指示器 -->
-    <div class="step-indicator">
-      <span
-        v-for="i in steps.length"
-        :key="i"
-        class="step-dot"
-        :class="{ active: currentIdx === i - 1, done: currentIdx > i - 1 }"
-        @click="goStep(i - 1)"
-      />
-    </div>
-
-    <!-- 三栏主体 -->
-    <div class="ml-grid">
+      <!-- 三栏主体 -->
+      <div class="ml-grid">
       <!-- 左栏：地址状态 + 变量 -->
       <div class="ml-left">
         <div class="panel-title">地址 / 寄存器</div>
@@ -720,6 +725,7 @@ set_limit(p->ldt[2],
         </div>
       </div>
     </div>
+    </div><!-- /ml-body -->
 
     <!-- 控制按钮 -->
     <div class="controls">
@@ -729,7 +735,6 @@ set_limit(p->ldt[2],
       </el-button>
       <el-button @click="goStep(currentIdx + 1)" :disabled="currentIdx === steps.length - 1" size="small">下一步 →</el-button>
       <el-button @click="reset" size="small">重置</el-button>
-      <span style="margin-left:12px;font-size:13px;color:#909399">{{ currentIdx + 1 }} / {{ steps.length }}</span>
     </div>
 
     <!-- 详情卡片 -->
@@ -1562,21 +1567,44 @@ onUnmounted(() => {
 <style scoped>
 /* ─── 根容器 ─── */
 .ml-root {
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-/* ─── Phase 进度条 ─── */
+/* ─── 主体：左侧导航 + 三栏内容 ─── */
+.ml-body {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+/* ─── 左侧竖向导航 ─── */
+.ml-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.nav-section-title {
+  font-size: 10px;
+  font-weight: 600;
+  color: #c0c4cc;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0 2px;
+}
+
+/* ─── Phase 进度条（竖向） ─── */
 .phase-bar {
   display: flex;
+  flex-direction: column;
   gap: 4px;
 }
 .phase-seg {
-  flex: 1;
-  padding: 8px 12px;
+  padding: 8px 10px;
   border-radius: 6px;
   background: #f5f7fa;
   border: 1px solid #e4e7ed;
@@ -1592,14 +1620,15 @@ onUnmounted(() => {
 .phase-label { font-size: 13px; font-weight: 600; color: #303133; }
 .phase-seg.active .phase-label { color: #409eff; }
 .phase-seg.done .phase-label { color: #67c23a; }
-.phase-file { font-size: 11px; color: #909399; font-family: monospace; }
+.phase-file { font-size: 10px; color: #909399; font-family: monospace; word-break: break-all; }
 
-/* ─── 步骤指示器 ─── */
+/* ─── 步骤指示器（竖向列内自动换行） ─── */
 .step-indicator {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 4px;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 5px;
+  padding: 2px;
 }
 .step-dot {
   width: 8px; height: 8px;
@@ -1615,9 +1644,8 @@ onUnmounted(() => {
 /* ─── 三栏布局 ─── */
 .ml-grid {
   display: grid;
-  grid-template-columns: 250px 1fr 250px;
+  grid-template-columns: 230px 1fr 230px;
   gap: 12px;
-  min-height: 500px;
 }
 
 /* ─── 左栏 ─── */
