@@ -172,7 +172,14 @@
                     :style="`flex:${b.width};background:${b.color}20;border-color:${b.color}`">
                     <div class="crcb-label">{{ b.name }}</div>
                     <div class="crcb-pos">bit{{ b.pos }}</div>
-                    <div class="crcb-desc">{{ b.desc }}</div>
+                  </div>
+                </div>
+                <!-- 位域说明 legend（移出小格子，避免溢出） -->
+                <div v-if="cr.bits" class="crcb-legend">
+                  <div v-for="b in cr.bits.filter(x => x.name !== '...')" :key="b.name" class="crcbl-item">
+                    <span class="crcbl-dot" :style="`background:${b.color}`" />
+                    <span class="crcbl-name" :style="`color:${b.color}`">{{ b.name }}</span>
+                    <span class="crcbl-desc">{{ b.desc }}</span>
                   </div>
                 </div>
                 <div class="crc-when">{{ cr.when }}</div>
@@ -1297,8 +1304,8 @@ const crRegs = [
     name: 'CR3', key: true, color: '#67c23a',
     role: '页目录基址寄存器（PDBR）— 分页的入口',
     bits: [
-      { name: '页目录物理地址[31:12]', pos: '31:12', width: 10, color: '#67c23a', desc: '页目录表的物理地址高20位（低12位为0，4KB对齐）' },
-      { name: '标志', pos: '11:0', width: 2, color: '#c0c4cc', desc: 'PCD/PWT 缓存控制位' },
+      { name: 'PFBA[31:12]', pos: '31:12', width: 10, color: '#67c23a', desc: '页目录表物理基址高20位（低12位固定为0，4KB对齐）' },
+      { name: 'Flags', pos: '11:0', width: 2, color: '#c0c4cc', desc: 'PCD/PWT 缓存控制位' },
     ],
     when: '进程切换时 switch_to() 写入新进程的页目录物理地址，CPU 立刻使用新页表',
   },
@@ -2154,11 +2161,16 @@ onUnmounted(() => {
 .cr-key { border-width: 2px; }
 .crc-name { font-size: 14px; font-weight: 700; font-family: monospace; margin-bottom: 4px; color: #909399; }
 .crc-role { font-size: 10px; color: #606266; line-height: 1.5; margin-bottom: 6px; }
-.crc-bits { display: flex; gap: 3px; margin-bottom: 6px; height: 48px; }
-.crcb-bit { border: 1px solid; border-radius: 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2px; text-align: center; }
-.crcb-label { font-size: 10px; font-weight: 700; }
+.crc-bits { display: flex; gap: 3px; margin-bottom: 5px; }
+.crcb-bit { border: 1px solid; border-radius: 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4px 2px; text-align: center; min-height: 36px; overflow: hidden; }
+.crcb-label { font-size: 10px; font-weight: 700; word-break: break-all; line-height: 1.2; }
 .crcb-pos   { font-size: 8px; color: #909399; font-family: monospace; }
-.crcb-desc  { font-size: 8px; color: #606266; line-height: 1.3; }
+/* legend：位域说明独立一列 */
+.crcb-legend { display: flex; flex-direction: column; gap: 4px; margin-bottom: 6px; }
+.crcbl-item  { display: flex; align-items: flex-start; gap: 5px; }
+.crcbl-dot   { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+.crcbl-name  { font-size: 10px; font-weight: 700; font-family: monospace; flex-shrink: 0; min-width: 28px; }
+.crcbl-desc  { font-size: 10px; color: #606266; line-height: 1.5; }
 .crc-when { font-size: 9px; color: #909399; background: #f5f7fa; border-radius: 3px; padding: 4px 6px; line-height: 1.5; }
 .cr-timeline { background: #f5f7fa; border-radius: 4px; padding: 8px 10px; }
 .crt-title { font-size: 11px; font-weight: 600; color: #303133; margin-bottom: 6px; }
