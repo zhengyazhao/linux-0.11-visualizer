@@ -807,8 +807,8 @@ startup_32:
     srcRef: 'boot/head.s — setup_paging / mm/memory.c — do_no_page',
     tagType: 'info',
     scene: 'cr-regs',
-    explain: '控制寄存器（Control Registers）是 x86 CPU 内部的特殊寄存器，不存业务数据，专门控制 CPU 自身的工作方式。普通寄存器（EAX/EBX 等）用 MOV 随时读写，控制寄存器只有内核态（ring0）才能修改，用户程序碰不到它们。\n\nCR0 是"模式总开关"：bit0（PE）=1 进入保护模式，bit31（PG）=1 开启分页。CR2 是"出事现场记录仪"：CPU 遇到缺页时自动把出问题的地址写进去。CR3 是"页表指针"：告诉 CPU 当前进程的页目录在哪。',
-    detail: 'CR0.PE（bit0）=1 由 boot/setup.s 在进入保护模式前设置；CR0.PG（bit31）=1 由 head.s 的 setup_paging 在建好页表后设置——顺序不能反，否则 CPU 找不到页表就崩了。CR3 存放页目录的物理基址，进程切换时 switch_to() 会更新 CR3，使新进程的页表立刻生效。CR2 由 CPU 硬件在缺页时自动写入触发缺页的线性地址，do_no_page() 读取 CR2 才知道该分配哪个地址的页。CR1 在 Intel 手册中保留未定义，Linux 0.11 从不访问它。',
+    explain: 'CR0 存在哪里？就在 CPU 芯片内部，和 EAX/EBX 一样是一个硬件寄存器，不在内存里、不在硬盘里，断电就没了。它是一个 32 位的寄存器，每一个 bit 就是一个开关。\n\n谁能改它？只有内核（ring0）。改法是：先 mov %cr0,%eax 把它读出来，改完 eax 再 mov %eax,%cr0 写回去。用户程序直接执行这条指令 CPU 会抛异常。\n\n它用在哪？Linux 0.11 启动时 head.s 会连改两次：第一次设 bit0（PE=1）进入保护模式，第二次设 bit31（PG=1）开启分页——顺序不能反，必须先把页表建好再开分页，否则 CPU 找不到页表直接崩。',
+    detail: 'CR0 bit0 叫 PE（Protection Enable），=1 时 CPU 从实模式切换到保护模式：段寄存器变成选择子、出现特权级概念、GDT 生效。bit31 叫 PG（Paging），=1 时开启分页，之后所有内存访问都要经过页表翻译。CR2 不需要软件写，CPU 遇到缺页时硬件自动把"哪个地址出了问题"存进去，内核的 do_no_page() 直接读 CR2 就知道该给哪个地址补页。CR3 存的是当前进程页目录的物理地址，进程切换时 switch_to() 把新进程的页目录地址写入 CR3，CPU 立刻用新的页表，地址空间瞬间切换。',
     code: `/* boot/head.s — 开启分页 */
 setup_paging:
     movl $pg_dir,%eax
