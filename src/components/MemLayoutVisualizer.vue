@@ -807,8 +807,8 @@ startup_32:
     srcRef: 'boot/head.s — setup_paging / mm/memory.c — do_no_page',
     tagType: 'info',
     scene: 'cr-regs',
-    explain: 'CR0 控制 CPU 模式开关，CR2 记录缺页地址，CR3 指向当前页目录——这三个寄存器串联起整个地址翻译机制。CR1 是 x86 保留字段，Linux 0.11 不使用。',
-    detail: 'CR0.PE（bit0）=1 进入保护模式；CR0.PG（bit31）=1 开启分页，两者都在 head.s 里设置。CR3 存放页目录的物理基址，进程切换时 switch_to() 会更新 CR3，使新进程的页表立刻生效。CR2 由 CPU 硬件在缺页时自动写入触发缺页的线性地址，do_no_page() 读取 CR2 才知道该分配哪个地址的页。',
+    explain: '控制寄存器（Control Registers）是 x86 CPU 内部的特殊寄存器，不存业务数据，专门控制 CPU 自身的工作方式。普通寄存器（EAX/EBX 等）用 MOV 随时读写，控制寄存器只有内核态（ring0）才能修改，用户程序碰不到它们。\n\nCR0 是"模式总开关"：bit0（PE）=1 进入保护模式，bit31（PG）=1 开启分页。CR2 是"出事现场记录仪"：CPU 遇到缺页时自动把出问题的地址写进去。CR3 是"页表指针"：告诉 CPU 当前进程的页目录在哪。',
+    detail: 'CR0.PE（bit0）=1 由 boot/setup.s 在进入保护模式前设置；CR0.PG（bit31）=1 由 head.s 的 setup_paging 在建好页表后设置——顺序不能反，否则 CPU 找不到页表就崩了。CR3 存放页目录的物理基址，进程切换时 switch_to() 会更新 CR3，使新进程的页表立刻生效。CR2 由 CPU 硬件在缺页时自动写入触发缺页的线性地址，do_no_page() 读取 CR2 才知道该分配哪个地址的页。CR1 在 Intel 手册中保留未定义，Linux 0.11 从不访问它。',
     code: `/* boot/head.s — 开启分页 */
 setup_paging:
     movl $pg_dir,%eax
@@ -845,16 +845,21 @@ void do_no_page(unsigned long error_code,
     srcRef: 'include/linux/sched.h:163',
     tagType: 'warning',
     scene: 'selector',
-    explain: '段寄存器（CS/DS/SS等）存放选择子，16位中 TI=0 查全局GDT，TI=1 查进程LDT，低2位是请求特权级RPL。',
-    detail: '选择子（Selector）是16位整数：高13位是描述符索引，bit[2]（TI）决定查 GDT 还是 LDT，bit[1:0]（RPL）是请求特权级。内核态 CS=0x08（GDT[1], RPL=0），用户态 CS=0x0F（LDT[1], RPL=3）。sched.h 中 task_struct 保存了每个进程的 LDT 描述符。',
-    code: `/* include/linux/sched.h:163 */
-struct task_struct {
+    explain: '段寄存器（CS/DS/SS/ES 等）里存的不是地址，而是一个 16 位的"索引号"——这就是选择子。CPU 每次访问内存都先查它，再去 GDT 或 LDT 里找到对应的段描述符，才知道基址和权限。\n\n选择子从哪来？有三种来源：① 内核启动时 head.s 用 MOV 指令直接写入（如 mov $0x10,%ds）；② 进程切换时 switch_to() 用 lldt 指令加载新进程的 LDT 选择子；③ 从内核态返回用户态时，iret 指令从内核栈上弹出用户态的 CS/SS，完成特权级降级。',
+    detail: '选择子（Selector）是16位整数：高13位是描述符索引，bit[2]（TI）决定查 GDT 还是 LDT，bit[1:0]（RPL）是请求特权级。内核态 CS=0x08（GDT[1], RPL=0，TI=0 查GDT）；用户态 CS=0x0F（LDT[1], RPL=3，TI=1 查LDT）。每次进程切换，内核会执行 lldt（load LDT）指令把新进程的 LDT 位置告诉 CPU，之后该进程访问内存时 CPU 就查它自己的 LDT，而不是别人的——这是进程隔离的基础。',
+    code: `/* boot/head.s:startup_32 — 内核直接写选择子 */
+    movl $0x10,%eax   /* 0x10 = GDT[2]，内核数据段 */
+    mov  %ax,%ds      /* DS = 0x10 */
+    mov  %ax,%es
+    mov  %ax,%fs
+    mov  %ax,%gs
+
+/* kernel/sched.c:switch_to — 进程切换时加载 LDT */
+#define switch_to(n) { \\
     ...
-    struct desc_struct ldt[3];
-    /* ldt[0] = NULL描述符
-     * ldt[1] = 代码段
-     * ldt[2] = 数据段 */
-};`,
+    __asm__("lldt %%ax"::"a"(_LDT(n))); /* 加载进程n的LDT选择子 */ \\
+    ...
+}`,
     addrExample: {
       logicalSel: '0x0008', logicalOff: '0x001500',
       linear: '0x001500', physical: '0x001500',
