@@ -167,6 +167,7 @@
                 :style="cr.key ? `border-color:${cr.color};background:${cr.color}10` : ''">
                 <div class="crc-name" :style="cr.key ? `color:${cr.color}` : ''">{{ cr.name }}</div>
                 <div class="crc-role">{{ cr.role }}</div>
+                <div v-if="cr.detail" class="crc-detail">{{ cr.detail }}</div>
                 <div v-if="cr.bits" class="crc-bits">
                   <div v-for="b in cr.bits" :key="b.name" class="crcb-bit"
                     :style="`flex:${b.width};background:${b.color}20;border-color:${b.color}`">
@@ -1285,34 +1286,38 @@ const rightPanelTitle = computed(() => {
 const crRegs = [
   {
     name: 'CR0', key: true, color: '#409eff',
-    role: '系统控制寄存器 — 决定 CPU 工作在哪种模式',
+    role: 'CPU 内部 32 位开关寄存器 — 每个 bit 控制一种工作模式',
+    detail: '存在 CPU 芯片内部，不占内存地址。只有内核（ring0）能改它：先 mov %cr0,%eax 读出来，改完再 mov %eax,%cr0 写回去。用户程序直接操作会触发保护异常。',
     bits: [
-      { name: 'PE',  pos: '0',  width: 2,  color: '#409eff', desc: '=1 进入保护模式（实模式→保护模式的开关）' },
+      { name: 'PE',  pos: '0',  width: 2,  color: '#409eff', desc: '=1 进入保护模式：GDT 生效，出现特权级，段寄存器变选择子' },
       { name: '...',  pos: '1-30', width: 10, color: '#c0c4cc', desc: '其他控制位（WP写保护、NE等）' },
-      { name: 'PG',  pos: '31', width: 2,  color: '#f56c6c', desc: '=1 开启分页机制（分页的总开关）' },
+      { name: 'PG',  pos: '31', width: 2,  color: '#f56c6c', desc: '=1 开启分页：之后所有地址访问都要经页表翻译' },
     ],
-    when: 'head.s: 先设 PE=1 进保护模式，建好页表后再设 PG=1 开分页',
+    when: 'head.s 启动时连改两次：先 PE=1 进保护模式，建好页表后再 PG=1 开分页（顺序不能反）',
   },
   {
     name: 'CR1', key: false, color: '#c0c4cc',
-    role: 'x86 保留，Intel 从未定义用途',
+    role: 'Intel 保留寄存器 — 至今未被定义任何功能',
+    detail: '存在 CPU 内部但没有任何实际电路与它相连。Intel 手册明确标注"保留，不要访问"。',
     bits: null,
-    when: 'Linux 0.11 从不访问 CR1',
+    when: 'Linux 0.11 从不访问 CR1，任何软件都不应操作它',
   },
   {
     name: 'CR2', key: true, color: '#e6a23c',
-    role: '缺页线性地址寄存器 — 只读，CPU 自动写入',
+    role: '缺页地址寄存器 — CPU 发生缺页时自动写入出错的线性地址',
+    detail: '软件不能主动写它，只能读。发生缺页（INT 14）时，CPU 硬件把"哪个地址的访问出了问题"自动存进 CR2，内核读取后才知道该给哪块内存补页。',
     bits: null,
-    when: '发生缺页（INT 14）时，CPU 把触发异常的线性地址写入 CR2，do_no_page() 读取它',
+    when: 'mm/memory.c 的 do_no_page() 读取 CR2，得到缺页地址，再调用 get_free_page() 分配物理页',
   },
   {
     name: 'CR3', key: true, color: '#67c23a',
-    role: '页目录基址寄存器（PDBR）— 分页的入口',
+    role: '页目录基址寄存器 — 告诉 CPU 当前进程的页表在内存哪里',
+    detail: '存的是页目录（Page Directory）的物理地址。开启分页（CR0.PG=1）后，CPU 每次翻译地址都先读 CR3 找到页目录，再逐级查页表。每个进程有自己的页目录，切换进程就要换 CR3。',
     bits: [
-      { name: 'PFBA[31:12]', pos: '31:12', width: 10, color: '#67c23a', desc: '页目录表物理基址高20位（低12位固定为0，4KB对齐）' },
+      { name: 'PFBA[31:12]', pos: '31:12', width: 10, color: '#67c23a', desc: '页目录物理基址高20位（低12位固定为0，4KB对齐）' },
       { name: 'Flags', pos: '11:0', width: 2, color: '#c0c4cc', desc: 'PCD/PWT 缓存控制位' },
     ],
-    when: '进程切换时 switch_to() 写入新进程的页目录物理地址，CPU 立刻使用新页表',
+    when: '进程切换时 switch_to() 把新进程的页目录地址写入 CR3，CPU 立刻使用新页表，地址空间瞬间切换',
   },
 ]
 
@@ -2165,7 +2170,8 @@ onUnmounted(() => {
 .cr-card { border: 1px solid #e4e7ed; border-radius: 6px; padding: 10px; transition: all .2s; }
 .cr-key { border-width: 2px; }
 .crc-name { font-size: 14px; font-weight: 700; font-family: monospace; margin-bottom: 4px; color: #909399; }
-.crc-role { font-size: 10px; color: #606266; line-height: 1.5; margin-bottom: 6px; }
+.crc-role   { font-size: 10px; color: #606266; line-height: 1.5; margin-bottom: 4px; }
+.crc-detail { font-size: 10px; color: #303133; line-height: 1.6; margin-bottom: 6px; padding: 5px 7px; background: #f5f7fa; border-radius: 4px; border-left: 2px solid #dcdfe6; }
 .crc-bits { display: flex; gap: 3px; margin-bottom: 5px; }
 .crcb-bit { border: 1px solid; border-radius: 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4px 2px; text-align: center; min-height: 36px; overflow: hidden; }
 .crcb-label { font-size: 10px; font-weight: 700; word-break: break-all; line-height: 1.2; }
